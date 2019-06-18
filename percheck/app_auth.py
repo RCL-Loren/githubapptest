@@ -86,9 +86,10 @@ class GitApp:
                              headers=self.auth_headers())
         
         resp_json = resp.json()
-
+        
+        #log.info('Installation token: ' + resp_json['token'])
         log.info('Code: ' + str(resp.status_code))
-        #log.info('Content: ' + resp.content.decode())
+        log.info('Content: ' + resp.content.decode())
 
 
         install_auth_headers = {"Authorization": "token {}".format(resp_json['token']),
@@ -98,7 +99,6 @@ class GitApp:
         
         json_string = json.dumps(resp.json(), indent=4, sort_keys=True)
 
-        log.info('Installation token: ' + resp_json['token'])
         log.info('Code: ' + str(resp.status_code))
-        #log.info('Content: ' + resp.content.decode())
+        log.info('Content: ' + resp.content.decode())
         #log.info('Pretty: ' + json_string)

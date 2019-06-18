@@ -3,8 +3,6 @@ dynamic dns from noip http://githubapp.ddns.net:5000/
 
 May have to update noip during this testing cycle
 
-Webhook secret uMTnH8TbfTwawUgPdTGw
-
 export FLASK_APP=percheck
 export FLASK_ENV=development
 
