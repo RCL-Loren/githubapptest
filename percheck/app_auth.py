@@ -7,23 +7,24 @@ from flask import current_app
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import jwt
-
+import base64
 
 log = logging.getLogger('percheck.sub')
 
 class GitApp:
 
     def __init__(self):
-        self.private_key =''
-        self.github_app_id =''
-        self.github_webhook_secret=''
+        self.installation_id=None
+        self.install_auth_headers=None
         self.payload_raw=None
         self.payload=None
 
     def set_request_payload(self, request):
         self.payload_raw=request.get_data()
         self.payload=request.get_json()
-        
+        log.info('Inboud Webhook Call')
+        log.info(json.dumps(self.payload, indent=4, sort_keys=True))
+
     def verify_webhook_signature(self, request):
         
         incoming_sig_header = request.headers.get('X-Hub-Signature')
@@ -73,14 +74,14 @@ class GitApp:
         resp = requests.get('https://api.github.com/app', headers=self.auth_headers())
 
         log.info('Code: ' + str(resp.status_code))
-        log.info('Content: ' + resp.content.decode())
+        #log.info('Content: ' + resp.content.decode())
 
         return(resp.json())
 
     def auth_github_installation(self):
         log.info("Github Installation ID: " + str(self.payload['installation']['id']))
 
-        installation_id = self.payload['installation']['id']
+        self.installation_id = self.payload['installation']['id']
 
         resp = requests.post('https://api.github.com/installations/{}/access_tokens'.format(installation_id), 
                              headers=self.auth_headers())
@@ -89,16 +90,33 @@ class GitApp:
         
         #log.info('Installation token: ' + resp_json['token'])
         log.info('Code: ' + str(resp.status_code))
-        log.info('Content: ' + resp.content.decode())
+        #log.info('Content: ' + resp.content.decode())
 
 
-        install_auth_headers = {"Authorization": "token {}".format(resp_json['token']),
+        self.install_auth_headers = {"Authorization": "token {}".format(resp_json['token']),
            "Accept": "application/vnd.github.machine-man-preview+json"}
 
-        resp = requests.get('https://api.github.com/installation/repositories', headers=install_auth_headers)
+        resp = requests.get('https://api.github.com/installation/repositories', headers=self.install_auth_headers)
         
         json_string = json.dumps(resp.json(), indent=4, sort_keys=True)
 
         log.info('Code: ' + str(resp.status_code))
-        log.info('Content: ' + resp.content.decode())
+        #log.info('Content: ' + resp.content.decode())
         #log.info('Pretty: ' + json_string)
+
+    def get_commit_file_blob(self, user, repo, file_sha):
+        log.info('Executing GET file blob')
+        
+        resp = requests.get('https://api.github.com/repos/' + user + '/' + repo + '/git/blobs/' + file_sha,headers=self.install_auth_headers)
+
+        resp_json = resp.json()
+
+        blob = resp_json['content']
+
+        content = base64.b64decode(blob).decode()
+        #content = blob
+
+        log.info('Code: ' + str(resp.status_code)) 
+        log.info(content)
+
+        return content
